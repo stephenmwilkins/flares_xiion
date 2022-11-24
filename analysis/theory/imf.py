@@ -30,10 +30,12 @@ if __name__ == '__main__':
 
     sfh = SFH.Constant({'duration': 10 * Myr})
 
-    fig, ax = single()
+    fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=(3.5, 5))
+    plt.subplots_adjust(left=0.15, bottom=0.1, right=0.9, top=0.95, wspace=0, hspace=0)
 
-    ax.axvline(2.35, c='k', alpha=0.1, lw=3)
-    ax.axvline(2.3, c='k', alpha=0.1, lw=1)
+    for ax in [ax1, ax2]:
+        ax.axvline(2.35, c='k', alpha=0.1, lw=3)
+        ax.axvline(2.3, c='k', alpha=0.1, lw=1)
 
     handles = []
 
@@ -77,6 +79,7 @@ if __name__ == '__main__':
             Zh = ZH.deltaConstant({'log10Z': log10Z})  # constant metallicity
 
             xiion = []
+            Q = []
 
             for model in models:
                 print(model)
@@ -92,25 +95,31 @@ if __name__ == '__main__':
                 # --- define galaxy object
                 galaxy = SEDGenerator(grid, sfzh)
 
-                Q = galaxy.get_Q()  # get ionising photon number
+                Q_ = galaxy.get_Q()  # get ionising photon number
                 sed = galaxy.spectra['stellar']
                 luminosities = sed.get_broadband_luminosities(fc)
                 LFUV = luminosities['FUV']
-                xiion_ = Q/LFUV
+                xiion_ = Q_/LFUV
+                Q.append(Q_)
                 xiion.append(xiion_)
 
             # ax1b.plot(a3s, np.log10(log10Q), lw=2, color=color, alpha=0.3,
             #           ls=ls, zorder=0, marker=marker, markersize=4)
 
-            ax.plot(a3s, np.log10(xiion), lw=1, color=color,
-                    ls=ls, zorder=1, marker=marker, markersize=3)
+            ax1.plot(a3s, np.log10(Q), lw=1, color=color,
+                     ls=ls, zorder=1, marker=marker, markersize=3)
+
+            ax2.plot(a3s, np.log10(xiion), lw=1, color=color,
+                     ls=ls, zorder=1, marker=marker, markersize=3)
 
         handles.append(mlines.Line2D([], [], color='0.5', ls=ls, marker=marker, markersize=4,
                                      lw=1, label=rf'$\rm {model_info["sps_model"]}\ {model_info["sps_model_version"]} {suffix}$'))
 
-    ax.set_ylim([25., 26.])
-    ax.set_ylabel(r'$\rm log_{10}(\xi_{ion}/erg^{-1}\ Hz)$')
-    ax.legend(handles=handles, fontsize=7, labelspacing=0.1)
-    ax.set_xlabel(r'$\rm \alpha_{3}$')
+    ax1.legend(fontsize=7, labelspacing=0.1)
+    ax1.set_ylabel(r'$\rm log_{10}(\dot{n}_{LyC}/s^{-1} M_{\odot}^{-1})$')
+    ax2.set_ylim([25., 26.])
+    ax2.set_ylabel(r'$\rm log_{10}(\xi_{ion}/erg^{-1}\ Hz)$')
+    ax1.legend(handles=handles, fontsize=7, labelspacing=0.1)
+    ax2.set_xlabel(r'$\rm \alpha_{3}$')
 
     fig.savefig('figs/theory_imf.pdf')

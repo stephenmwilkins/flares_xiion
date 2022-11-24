@@ -36,7 +36,8 @@ if __name__ == '__main__':
 
     model = 'bpass-v2.2.1-bin_chab-300_cloudy-v17.03_log10Uref-2'
 
-    fig, ax = single()
+    fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=(3.5, 5))
+    plt.subplots_adjust(left=0.15, bottom=0.1, right=0.9, top=0.95, wspace=0, hspace=0)
 
     handles = []
 
@@ -55,6 +56,7 @@ if __name__ == '__main__':
         cmap = cmr.get_sub_cmap('cmr.sunburst', 0.05, 0.85)
 
         xiion = []
+        Q = []
 
         for log10Z in grid.log10Zs:  #
 
@@ -68,7 +70,7 @@ if __name__ == '__main__':
             # --- define galaxy object
             galaxy = SEDGenerator(grid, sfzh)
 
-            Q = galaxy.get_Q()  # get ionising photon number
+            Q_ = galaxy.get_Q()  # get ionising photon number
 
             sed = galaxy.spectra['stellar']
 
@@ -76,17 +78,20 @@ if __name__ == '__main__':
 
             LFUV = luminosities['FUV']
 
-            xiion_ = Q/LFUV
-
+            xiion_ = Q_/LFUV
+            Q.append(Q_)
             xiion.append(xiion_)
             # ax.scatter(log10Z, np.log10(xiion_), color=color, zorder=2, s=10)
 
-        ax.plot(grid.log10Zs, np.log10(xiion), lw=1, color='0.5', ls=ls,
-                zorder=1, label=rf'$\rm {model_info["sps_model"]}\ {model_info["sps_model_version"]}$')
+        ax1.plot(grid.log10Zs, np.log10(Q), lw=1, color='0.5', ls=ls,
+                 zorder=1, label=rf'$\rm {model_info["sps_model"]}\ {model_info["sps_model_version"]}$')
+        ax2.plot(grid.log10Zs, np.log10(xiion), lw=1, color='0.5', ls=ls,
+                 zorder=1)
 
-    ax.set_ylim([25., 26.])
-    ax.set_ylabel(r'$\rm log_{10}(\xi_{ion}/erg^{-1}\ Hz)$')
-    ax.legend(fontsize=7, labelspacing=0.1)
-    ax.set_xlabel(r'$\rm log_{10}Z_{\star}$')
+    ax1.legend(fontsize=7, labelspacing=0.1)
+    ax1.set_ylabel(r'$\rm log_{10}(\dot{n}_{LyC}/s^{-1} M_{\odot}^{-1})$')
+    ax2.set_ylim([25., 26.])
+    ax2.set_ylabel(r'$\rm log_{10}(\xi_{ion}/erg^{-1}\ Hz)$')
+    ax2.set_xlabel(r'$\rm log_{10}Z_{\star}$')
 
     fig.savefig('figs/theory_sps.pdf')

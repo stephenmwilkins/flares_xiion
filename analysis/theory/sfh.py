@@ -32,7 +32,8 @@ if __name__ == '__main__':
 
     log10durations = np.arange(0., 4., 0.1)
 
-    fig, ax = single()
+    fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=(3.5, 5))
+    plt.subplots_adjust(left=0.15, bottom=0.1, right=0.9, top=0.95, wspace=0, hspace=0)
 
     handles = []
 
@@ -74,6 +75,7 @@ if __name__ == '__main__':
             Zh = ZH.deltaConstant({'log10Z': log10Z})  # constant metallicity
 
             xiion = []
+            Q = []
 
             for log10duration in log10durations:
 
@@ -99,7 +101,7 @@ if __name__ == '__main__':
 
                 # --- get quanitities
 
-                Q = galaxy.get_Q()  # get ionising photon number
+                Q_ = galaxy.get_Q()  # get ionising photon number
 
                 sed = galaxy.spectra['stellar']
 
@@ -107,18 +109,19 @@ if __name__ == '__main__':
 
                 LFUV = luminosities['FUV']
 
-                xiion_ = Q/LFUV
-
+                xiion_ = Q_/LFUV
+                Q.append(Q_)
                 xiion.append(xiion_)
 
-                print(log10duration, np.log10(LFUV), np.log10(Q), np.log10(xiion_))
-
-            ax.plot(log10durations, np.log10(xiion), lw=1, color=color, ls=ls)
+            ax1.plot(log10durations, np.log10(Q), lw=1, color=color, ls=ls)
+            ax2.plot(log10durations, np.log10(xiion), lw=1, color=color, ls=ls)
 
         handles.append(mlines.Line2D([], [], color='0.5', ls=ls, lw=1, label=label))
 
-    ax.set_ylabel(r'$\rm log_{10}(\xi_{ion}/erg^{-1}\ Hz)$')
-    ax.legend(handles=handles, fontsize=6, labelspacing=0.1)
-    ax.set_xlabel(r'$\rm log_{10}(duration/Myr)$')
+    ax1.set_ylabel(r'$\rm log_{10}(\dot{n}_{LyC}/s^{-1} M_{\odot}^{-1})$')
+    ax2.set_ylabel(r'$\rm log_{10}(\xi_{ion}/erg^{-1}\ Hz)$')
+    ax1.legend(handles=handles, fontsize=7, labelspacing=0.1)
+
+    ax2.set_xlabel(r'$\rm log_{10}(duration/Myr)$')
 
     fig.savefig('figs/theory_sfh.pdf')
