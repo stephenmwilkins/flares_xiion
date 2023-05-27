@@ -1,5 +1,3 @@
-
-
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -7,15 +5,20 @@ import matplotlib.lines as mlines
 import matplotlib.cm as cm
 import cmasher as cmr
 from astropy.table import Table
+import flare.plt as fplt
 
 import sys
 import os
 
 from synthesizer.plt import single
-from synthesizer.filters import TopHatFilterCollection
-from synthesizer.grid import SpectralGrid
-from synthesizer.binned.sfzh import SFH, ZH, generate_sfzh, generate_instant_sfzh
-from synthesizer.binned.galaxy import SEDGenerator
+# from synthesizer.filters import TopHatFilterCollection
+from synthesizer.filters import FilterCollection
+# from synthesizer.grid import SpectralGrid
+from synthesizer.grid import Grid
+# from synthesizer.binned.sfzh import SFH, ZH, generate_sfzh, generate_instant_sfzh
+from synthesizer.parametric.sfzh import SFH, ZH, generate_sfzh, generate_instant_sfzh
+# from synthesizer.binned.galaxy import SEDGenerator
+from synthesizer.galaxy.parametric import ParametricGalaxy as Galaxy
 from unyt import yr, Myr
 
 
@@ -24,11 +27,15 @@ if __name__ == '__main__':
     # -------------------------------------------------
     # --- calcualte the EW for a given line as a function of age
 
+    grid_dir = '/cosma7/data/dp004/dc-seey1/modules/flares_xiion/analysis/theory'
     model = 'bpass-v2.2.1-bin_chab-300_cloudy-v17.03_log10Uref-2'
-    grid = SpectralGrid(model)
+    # model = 'bpass-2.2.1-bin_chabrier03-0.1,300.0_cloudy-v17.03-log10U_refm2.0'
+    grid = Grid(model, grid_dir=grid_dir)
 
     # --- define a filter collection including one TopHat filter mapped on to the same wavelength grid as the SPS model
-    fc = TopHatFilterCollection([('FUV', {'lam_min': 1400., 'lam_max': 1600})], new_lam=grid.lam)
+    # tophats = {'FUV': {'lam_eff': 1400., 'lam_fwhm': 1600.}}
+    tophats = {'FUV': {'lam_min': 1400., 'lam_max': 1600.}}
+    fc = FilterCollection(tophat_dict=tophats, new_lam=grid.lam)
 
     log10durations = np.arange(0., 4., 0.1)
 
@@ -38,6 +45,7 @@ if __name__ == '__main__':
     handles = []
 
     for sfh_model in ['Constant', 'Increasing Exponential', 'Decreasing Exponential', 'Instantaneous']:
+        print('sfh model:', sfh_model)
 
         if sfh_model == 'Constant':
             label = rf'$\rm Constant$'
@@ -62,7 +70,9 @@ if __name__ == '__main__':
             ls = ':'
 
         norm = mpl.colors.Normalize(vmin=-5, vmax=-1.5)
-        cmap = cmr.get_sub_cmap('cmr.sunburst', 0.05, 0.85)
+        # norm = mpl.colors.Normalize(vmin=-4, vmax=-2)
+        # cmap = cmr.get_sub_cmap('cmr.sunburst', 0.05, 0.85)
+        cmap = cmr.get_sub_cmap('cmr.torch', 0.3, 0.9)
 
         for log10Z in [-4., -3., -2.]:
 
@@ -97,11 +107,16 @@ if __name__ == '__main__':
 
                 # --- define galaxy object
                 # by default this automatically calculates the pure stellar spectra
-                galaxy = SEDGenerator(grid, sfzh)
+                # galaxy = SEDGenerator(grid, sfzh)
+                galaxy = Galaxy(sfzh)
+                galaxy.get_stellar_spectra(grid)
 
                 # --- get quanitities
 
-                Q_ = galaxy.get_Q()  # get ionising photon number
+                log10Q = grid.log10Q
+                # print(log10Q)
+                # print('keys:', log10Q.keys())
+                Q_ = galaxy.get_Q(grid)  # get ionising photon number
 
                 sed = galaxy.spectra['stellar']
 
@@ -118,9 +133,13 @@ if __name__ == '__main__':
 
         handles.append(mlines.Line2D([], [], color='0.5', ls=ls, lw=1, label=label))
 
-    ax1.set_ylabel(r'$\rm log_{10}(\dot{n}_{LyC}/s^{-1} M_{\odot}^{-1})$')
-    ax2.set_ylabel(r'$\rm log_{10}(\xi_{ion}/erg^{-1}\ Hz)$')
+    ax1.set_ylabel(r'$\log_{10}[(\dot{N}_{\rm ion,intr}/M_\star)/\rm{s}^{-1}\rm{M}_{\odot}^{-1}]$')
+    ax2.set_ylabel(r'$\log_{10}(\xi_{\rm ion}/\rm{erg^{-1}Hz})$')
     ax1.legend(handles=handles, fontsize=7, labelspacing=0.1)
+    ax1.grid(color='whitesmoke')
+    ax1.set_axisbelow(True)
+    ax2.grid(color='whitesmoke')
+    ax2.set_axisbelow(True)
 
     ax2.set_xlabel(r'$\rm log_{10}(duration/Myr)$')
 
